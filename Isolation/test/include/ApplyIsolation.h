@@ -31,7 +31,6 @@ class ApplyIsolation {
   TChain          *fChain1;   //!pointer to the analyzed TTree or TChain                                             
   Int_t           fCurrent1; //!current Tree number in a TChain                                                                                                                                            
   
-  
   // Declaration of leaf types
   
   //Rate
@@ -66,7 +65,7 @@ class ApplyIsolation {
    Float_t   eleProbePhi;
    Float_t   eleProbeEta;
  
- 
+
    ApplyIsolation(std::string& inputFileName);
    ~ApplyIsolation();
    
@@ -81,17 +80,18 @@ class ApplyIsolation {
    
    Long64_t nEntries_;
    Long64_t nEntries1_;
-   Long64_t maxEntriesForEfficiency_;
-   Long64_t maxEntriesForRate_;
-   Long64_t reportEvery_;
-   float frate_;
+
+   Long64_t maxEntriesForEfficiency;
+   Long64_t maxEntriesForRate;
+   Long64_t reportEvery;
+   float frate; 
+
    
    std::string ntupleFileNameRate_;
    std::string ntupleFileNameTurnOn_;
    std::string outputFileName_;
    std::string optionsFileName_;    
    std::vector<std::string> lutProgOptVec_;
-
    
    TFile* optionsFile_;
    TFile* outputFile_;
@@ -136,6 +136,8 @@ class ApplyIsolation {
    Double_t binning[39] ={1., 3., 5., 7., 9.,  10., 12., 15., 18., 20., 22., 24., 26., 28.,
                           29., 30., 31., 32., 33., 34., 35., 36., 37., 38., 39., 40., 41.,
                           42., 43., 45., 50., 60., 70., 100., 200., 300., 400., 600., 1000.};
+
+   Double_t xEdges_fine[nBins_fine+1];
 
 };
 

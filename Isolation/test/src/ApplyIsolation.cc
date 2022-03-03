@@ -201,7 +201,9 @@ void ApplyIsolation::loops() {
 	break;    
       }
     }     
-    std:: cout<<"option: "<<it<<" , "<<"et: "<< xbin<<std::endl;
+
+    std:: cout<<"option: "<<it<<" , "<<"et: "<<xbin<<" +/- " <<vl/sqrt(vl/scale)<<std::endl;
+
     et_option.push_back(xbin);
   }
 
@@ -217,8 +219,7 @@ void ApplyIsolation::loops() {
     PtPassName_fr_ +="_Et_";
     PtPassName_fr_=PtPassName_fr_ + std::to_string(et_option[n])  + "_fr";
     td2->cd();
-
-    TH1F*PtPass_fr= new TH1F(PtPassName_fr_, PtPassName_fr_, 38,binning);
+    TH1F*PtPass_fr= new TH1F(PtPassName_fr_, PtPassName_fr_, nBins_fine,xEdges_fine);
     pt_pass_Map_.insert(std::make_pair(PtPassName_fr_, PtPass_fr));
 
 
@@ -241,19 +242,22 @@ void ApplyIsolation::loops() {
 
 //Event loop for turnon
   if (fChain1 == 0) return;
-  nEntries1_ = fChain1->GetEntriesFast();
+
+  nEntries1_ = fChain1->GetEntries();
   Long64_t nbytes1 = 0, nb1 = 0;
   double sum=0;
-  
   std::cout << "Total available  Entries For Efficiency " << nEntries1_ << std::endl;
-  if(maxEntriesForEfficiency_ >0 ) nEntries1_= maxEntriesForEfficiency_ < nEntries1_ ? maxEntriesForEfficiency_ : nEntries1_;
-  std::cout<<"Processing a total of "<<nEntries1_<<" Entries \n";
+  if(maxEntriesForEfficiency >0 ) nEntries1_= maxEntriesForEfficiency < nEntries1_ ? maxEntriesForEfficiency : nEntries1_;
+
 
   t_start = std::chrono::high_resolution_clock::now();
   for (Long64_t jentry=0; jentry< nEntries1_; jentry++) {
     Long64_t ientry = fChain1->LoadTree(jentry);
     if (ientry < 0) break;
     nb1 = fChain1->GetEntry(jentry);   nbytes1 += nb1;
+
+ //   if(l1tEmuNTT<60 && nTTRange_) continue;  //define range
+    if(l1tEmuRawEt < 0.) continue;
     
     if(jentry%reportEvery_ == 0 )
       {
@@ -274,11 +278,7 @@ void ApplyIsolation::loops() {
     if(l1tEmuRawEt < 0.) continue;
     pT_all->Fill(eleProbeSclEt);
     sum++;
-    //sum2++;
-    //if(l1tEmuPt < 0.) continue;
-    //sum3++;
-    //if(l1tEmuNTT < 0) continue;
-    //sum4++;
+
     
     std::map<short, short>::iterator EtaPos = lutMapEta.find(abs(l1tEmuTowerIEta));
     if (EtaPos != lutMapEta.end()) in_compressediEta = EtaPos->second;
@@ -340,6 +340,9 @@ void ApplyIsolation::loops() {
     if(hasL1Emu_tightiso24==1) pt_pass_Map_Run2_["pt_pass_Et_24_tight"]->Fill(eleProbeSclEt);
 
   }
+
+  t_end = std::chrono::high_resolution_clock::now();
+  std::cout << " Turn Ons Done: Elapsed time : "<< std::chrono::duration<double, std::milli>(t_end-t_start).count()/1000.0<<std::endl;
 
   //Turnons for various Ets
   for(UInt_t e = 15 ; e <= 50 ; e += 5) {
@@ -430,7 +433,7 @@ void ApplyIsolation::loops() {
 void ApplyIsolation::bookHistograms() {
   outputFile_ = new TFile(outputFileName_.c_str(), "RECREATE");
   outputFile_->cd();
-  
+
   for (auto it : lutProgOptVec_) {    
     TString  CurrentNameHisto = "pt_Progression";
     TString CurrentNameHisto1= "rate_Progression";
@@ -489,6 +492,57 @@ void ApplyIsolation::bookHistograms() {
   th1fStore["FixedEtTurnons"]->SetCanExtend(TH1::kAllAxes);
   th1fStore["FixedEtTurnons_Acceptance"]   = new TH1F("FixedEtTurnons_Acceptance","",3,0.0,3.0);
   th1fStore["FixedEtTurnons_Acceptance"]->SetCanExtend(TH1::kAllAxes);
+
+
+  //using Run2 LUT
+  std::vector<int> v = {24, 26};
+  for(int e : v) {
+    TString PtPassName_= "pt_pass";
+    TString turnOnName_="turnOn";
+    PtPassName_ +="_Et_";
+    PtPassName_ += std::to_string(e);
+    TString PtPassLooseIsoName_=PtPassName_+"_loose";
+    TString PtPassTightIsoName_=PtPassName_+"_tight";
+    
+    turnOnName_ +="_Et_";
+    turnOnName_ += std::to_string(e);
+    
+    TString turnOnLooseIsoName_=turnOnName_+"_loose";
+    TString turnOnTightIsoName_=turnOnName_+"_tight";
+    
+    if(!check_turn_on_dir_Run2) {
+      td4 = outputFile_->mkdir("turnon_progression_Run2");
+      check_turn_on_dir_Run2 = true;
+    }
+    td4->cd();
+    //TH1F*PtPass= new TH1F(PtPassName_, PtPassName_, 38,binning);
+    //TH1F*PtPassLoose= new TH1F(PtPassLooseIsoName_, PtPassLooseIsoName_, 38,binning);
+    //TH1F*PtPassTight= new TH1F(PtPassTightIsoName_, PtPassTightIsoName_, 38,binning);
+    TH1F*PtPass= new TH1F(PtPassName_, PtPassName_, nBins_fine,xEdges_fine);
+    TH1F*PtPassLoose= new TH1F(PtPassLooseIsoName_, PtPassLooseIsoName_, nBins_fine,xEdges_fine);
+    TH1F*PtPassTight= new TH1F(PtPassTightIsoName_, PtPassTightIsoName_, nBins_fine,xEdges_fine);
+    
+    pt_pass_Map_Run2_.insert(std::make_pair(PtPassName_, PtPass));
+    pt_pass_Map_Run2_.insert(std::make_pair(PtPassLooseIsoName_, PtPassLoose));
+    pt_pass_Map_Run2_.insert(std::make_pair(PtPassTightIsoName_, PtPassTight));
+    
+    
+    TGraphAsymmErrors* turnOn;
+    TGraphAsymmErrors* turnOnLoose;
+    TGraphAsymmErrors* turnOnTight;
+
+    turnOn_Map_Run2_.insert(std::make_pair(turnOnName_,turnOn));
+    turnOn_Map_Run2_.insert(std::make_pair(turnOnLooseIsoName_,turnOnLoose));
+    turnOn_Map_Run2_.insert(std::make_pair(turnOnTightIsoName_,turnOnTight));
+  }
+
+
+  th1fStore["Run2Turnons_Acceptance"]   = new TH1F("Run2Turnons_Acceptance","",3,0.0,3.0);
+  th1fStore["Run2Turnons_Acceptance"]->SetCanExtend(TH1::kAllAxes);
+  th1fStore["Run2Turnons_LooseIso_Acceptance"]   = new TH1F("Run2Turnons_LooseIso_Acceptance","",3,0.0,3.0);
+  th1fStore["Run2Turnons_LooseIso_Acceptance"]->SetCanExtend(TH1::kAllAxes);
+  th1fStore["Run2Turnons_TightIso_Acceptance"]   = new TH1F("Run2Turnons_TightIso_Acceptance","",3,0.0,3.0);
+  th1fStore["Run2Turnons_TightIso_Acceptance"]->SetCanExtend(TH1::kAllAxes);
   
 
   //using Run2 LUT
@@ -607,10 +661,11 @@ void ApplyIsolation::readParameters(const std::string jfile) {
       else if (key=="EtaLUTFileName")   readLUTTable(value,nBinsIEta, lutMapEta);
       else if (key=="NTTLUTFileName")   readLUTTable(value,nBinsNTT, lutMapNTT);
       else if (key=="nTTRange") nTTRange_ = std::stoi(value.c_str());
-      else if (key=="ReportEvery")    reportEvery_ = atoi(value.c_str());
-      else if (key=="MaxEntriesForEfficency") maxEntriesForEfficiency_ = atoi(value.c_str());
-      else if (key=="MaxEntriesForRate")   maxEntriesForRate_ = atoi(value.c_str());
-      else if (key=="FixedRate") frate_ = std::stof(value.c_str());
+
+      else if (key=="MaxEntriesForEfficency") maxEntriesForEfficiency = atoi(value.c_str());
+      else if (key=="MaxEntriesForRate")   maxEntriesForRate = atoi(value.c_str());
+      else if (key=="FixedRate") frate = std::stof(value.c_str());
+      else if (key=="ReportEvery")    reportEvery = atoi(value.c_str());
       else if (key=="LUTProgressionOptions")
         {
 	  std::string tmp_string = value;
@@ -647,20 +702,17 @@ void ApplyIsolation::readTree() {
   fChain1->SetBranchAddress("eleProbeSclEt",&eleProbeSclEt);
   fChain1->SetBranchAddress("l1tEmuIsoEt",&l1tEmuIsoEt);
 
-  fChain1->SetBranchAddress("eleProbeEta",&eleProbeEta);
-  fChain1->SetBranchAddress("eleProbePhi",&eleProbePhi);
-  fChain1->SetBranchAddress("eleTagEta",&eleTagEta);
-  fChain1->SetBranchAddress("eleTagPhi",&eleTagPhi);
-  fChain1->SetBranchAddress("isProbeLoose",&isProbeLoose);
 
-  
+  fChain1->SetBranchAddress("eleProbeEta"  ,&eleProbeEta			);
+  fChain1->SetBranchAddress("eleProbePhi"  ,&eleProbePhi			);
+  fChain1->SetBranchAddress("eleTagEta"    ,&eleTagEta		    	);
+  fChain1->SetBranchAddress("eleTagPhi"    ,&eleTagPhi			    );
+  fChain1->SetBranchAddress("isProbeLoose" ,&isProbeLoose			);
   fChain1->SetBranchAddress("hasL1Emu_26",&hasL1Emu_26);
   fChain1->SetBranchAddress("hasL1Emu_24",&hasL1Emu_24);
   fChain1->SetBranchAddress("hasL1Emu_looseiso26",&hasL1Emu_looseiso26);
   fChain1->SetBranchAddress("hasL1Emu_looseiso24",&hasL1Emu_looseiso24);
   fChain1->SetBranchAddress("hasL1Emu_tightiso26",&hasL1Emu_tightiso26);
-  fChain1->SetBranchAddress("hasL1Emu_tightiso24",&hasL1Emu_tightiso24);
-
 
 }
 
