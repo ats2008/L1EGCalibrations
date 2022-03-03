@@ -26,15 +26,6 @@
 #include <chrono>
 
 ApplyIsolation::ApplyIsolation(std::string& inputFileName){
-  maxEntriesForRate=-1;
-  maxEntriesForEfficiency=-1;
-  reportEvery=5000;
-  frate=16.7;
-  for(Int_t i=0 ; i<= nBins_fine;i++)
-  {
-    xEdges_fine[i]=0.0+i*1.0;
-  } 
-
   readParameters(inputFileName);
   if (ntupleFileNameRate_.size() == 0) {
     std::cout << " Inputfile for rate list missing !!!" << ntupleFileNameRate_ << std::endl;
@@ -103,61 +94,46 @@ void ApplyIsolation::loops() {
 
   optionsFile_ = new TFile(optionsFileName_.c_str(), "READ");
   optionsFile_->cd("Step2Histos");
-  std::map<TString, TH3F*> optionsMap;
-    for (auto it :lutProgOptVec_) {
-      bool Filled_Progression= kFALSE;
-      Int_t IsoCut_Progression;
-      TString ResultProgressionName_= "LUT_Progression_";
-      TString pt_Progression_= "pt_Progression";
-      ResultProgressionName_ +=it;
-      pt_Progression_ +=it;
-	  TH3F* ResultProgressionName = (TH3F*)optionsFile_->Get("Step2Histos/"+ResultProgressionName_);
-      if( not ResultProgressionName) {
-        std::cout<<"BAD : "<<ResultProgressionName_<<" !! gonna break later\n exiting";
-        exit(1);
-      }
-      else 
-      { 
-        std::cout<<" Read option : "<<ResultProgressionName->GetName()<<"\n";
-        optionsMap[ResultProgressionName_]=ResultProgressionName;
-      }
-    }
+  
   //Event loop for rate                                                                                                                                                                                  
   if (fChain == 0) return;
   nEntries_ = fChain->GetEntriesFast();
-  if(maxEntriesForRate >0 ) nEntries_= maxEntriesForRate < nEntries_ ? maxEntriesForRate : nEntries_;
-  std::cout << " Entries " << nEntries_ << std::endl;
-  int den=0;
+  std::cout << "Total available  Entries for Rate: " << nEntries_ << std::endl;
+  if(maxEntriesForRate_ >0 ) nEntries_= maxEntriesForRate_ < nEntries_ ? maxEntriesForRate_ : nEntries_;
+  std::cout<<"Processing a total of: "<<nEntries_<<" Entries \n";
+
   auto t_start = std::chrono::high_resolution_clock::now();
   auto t_end = std::chrono::high_resolution_clock::now();
+
+  int den=0;
   for (Long64_t jentry=0; jentry < nEntries_; jentry++) {
     Long64_t ientry = fChain->LoadTree(jentry);
-    
-    if(jentry%reportEvery == 0 )
-       {
-             t_end = std::chrono::high_resolution_clock::now();
-             std::cout<<"Processing Entry in event loop : "<<jentry<<" / "<<nEntries_<<"  [ "<<100.0*jentry/nEntries_<<"  % ]  "
-                      << " Elapsed time : "<< std::chrono::duration<double, std::milli>(t_end-t_start).count()/1000.0
-                      <<"  Estimated time left : "<< std::chrono::duration<double, std::milli>(t_end-t_start).count()*( nEntries_ - jentry)/(1e-9 + jentry)* 0.001
-                      <<std::endl;
-       }
-
 
     if (ientry < 0) break;
     nb = fChain->GetEntry(jentry);   nbytes += nb;
+
+    if(jentry%reportEvery_ == 0 )
+      {
+	t_end = std::chrono::high_resolution_clock::now();
+	std::cout<<"Processing Entry in event loop (Rate) : "<<jentry<<" / "<<nEntries_<<"  [ "<<100.0*jentry/nEntries_<<"  % ]  "
+		 << " Elapsed time : "<< std::chrono::duration<double, std::milli>(t_end-t_start).count()/1000.0
+		 <<"  Estimated time left : "<< std::chrono::duration<double, std::milli>(t_end-t_start).count()*( nEntries_ - jentry)/(1e-9 + jentry)* 0.001
+		 <<std::endl;
+      }
+
+
     
     if (nEGs < 1) continue;
     for (auto it :lutProgOptVec_) {
       bool Filled_Progression= kFALSE;
       Int_t IsoCut_Progression;
-      TString ResultProgressionName_= "LUT_Progression_";
+      TString ResultProgressionName_= "LUT_Progression";
       TString pt_Progression_= "pt_Progression";
-      ResultProgressionName_ +=it;
+      ResultProgressionName_ += it;
       pt_Progression_ +=it;
       
-      //TH3F* ResultProgressionName = (TH3F*)gDirectory->Get(ResultProgressionName_.Data());
-	  //TH3F* ResultProgressionName = (TH3F*)optionsFile_->Get("Step2Histos/"+ResultProgressionName_);
-	  TH3F* ResultProgressionName = optionsMap[ResultProgressionName_];
+      TH3F* ResultProgressionName = (TH3F*)gDirectory->Get(ResultProgressionName_.Data());
+      
       for (UShort_t iEG=0; iEG < nEGs; ++iEG) {
 	
 	if (egBx[iEG]!=0)   continue;
@@ -215,25 +191,22 @@ void ApplyIsolation::loops() {
     float vl,bl; //last value, last bin
     for(UInt_t i=0;i< ET_MAX;i++) {
       float rate = rateMap_[CurrentNameHisto1]->GetBinContent(i+1);
-      if(rate > frate) {
+      if(rate > frate_) {
         bl =i;
 	vl=rate;
       }
       
-      if(rate <=frate){
-	xbin = (rate - frate) < abs(rate-vl) ? i : bl;
+      if(rate <=frate_){
+	xbin = (rate - frate_) < abs(rate-vl) ? i : bl;
 	break;    
       }
     }     
-    std:: cout<<"option: "<<it<<" , "<<"et: "<<xbin<<"  [ "<<vl/sqrt(vl/scale)<<" ]  "<<std::endl;
+    std:: cout<<"option: "<<it<<" , "<<"et: "<< xbin<<std::endl;
     et_option.push_back(xbin);
   }
 
 
   //booking histograms for fixed Et for all options
-  //  for(UInt_t i = 1 ; i < N_OPTIONS ; ++i ) {
-  
-
   int n=-1;
   for (auto it :lutProgOptVec_) {    
     n++;
@@ -244,9 +217,8 @@ void ApplyIsolation::loops() {
     PtPassName_fr_ +="_Et_";
     PtPassName_fr_=PtPassName_fr_ + std::to_string(et_option[n])  + "_fr";
     td2->cd();
-    
-    //TH1F*PtPass_fr= new TH1F(PtPassName_fr_, PtPassName_fr_, 21,binning);
-    TH1F*PtPass_fr= new TH1F(PtPassName_fr_, PtPassName_fr_, nBins_fine,xEdges_fine);
+
+    TH1F*PtPass_fr= new TH1F(PtPassName_fr_, PtPassName_fr_, 38,binning);
     pt_pass_Map_.insert(std::make_pair(PtPassName_fr_, PtPass_fr));
 
 
@@ -254,7 +226,6 @@ void ApplyIsolation::loops() {
     turnOn_Option_fr_ +="_Et_";
     turnOn_Option_fr_ = turnOn_Option_fr_ + std::to_string(et_option[n]) + "_fr";
     
-
     if(!check_turn_on_dir) {                                                                                                     
       td3 = outputFile_->mkdir("turn_on_progression");                                                                           
       check_turn_on_dir = true;                                                                                                  
@@ -270,44 +241,49 @@ void ApplyIsolation::loops() {
 
 //Event loop for turnon
   if (fChain1 == 0) return;
-  nEntries1_ = fChain1->GetEntries();
-  if(maxEntriesForEfficiency > -1 ) nEntries1_= maxEntriesForEfficiency < nEntries1_ ? maxEntriesForEfficiency : nEntries1_;
-
-  std::cout << " Entries " << nEntries1_ << std::endl;
-
+  nEntries1_ = fChain1->GetEntriesFast();
   Long64_t nbytes1 = 0, nb1 = 0;
+  double sum=0;
+  
+  std::cout << "Total available  Entries For Efficiency " << nEntries1_ << std::endl;
+  if(maxEntriesForEfficiency_ >0 ) nEntries1_= maxEntriesForEfficiency_ < nEntries1_ ? maxEntriesForEfficiency_ : nEntries1_;
+  std::cout<<"Processing a total of "<<nEntries1_<<" Entries \n";
 
   t_start = std::chrono::high_resolution_clock::now();
   for (Long64_t jentry=0; jentry< nEntries1_; jentry++) {
     Long64_t ientry = fChain1->LoadTree(jentry);
-    
-    if(jentry%reportEvery == 0 )
-       {
-             t_end = std::chrono::high_resolution_clock::now();
-             std::cout<<"Processing Entry in event loop : "<<jentry<<" / "<<nEntries1_<<"  [ "<<100.0*jentry/nEntries1_<<"  % ]  "
-                      << " Elapsed time : "<< std::chrono::duration<double, std::milli>(t_end-t_start).count()/1000.0
-                      <<"  Estimated time left : "<< std::chrono::duration<double, std::milli>(t_end-t_start).count()*( nEntries1_ - jentry)/(1e-9 + jentry)* 0.001
-                      <<std::endl;
-       }
- 
-
     if (ientry < 0) break;
     nb1 = fChain1->GetEntry(jentry);   nbytes1 += nb1;
-    if(l1tEmuNTT<60 && nTTRange_) continue;  //define range
-    if(l1tEmuRawEt < 0.) continue;
     
-    if( isProbeLoose==0 ) continue;
-    if( fabs(eleProbeEta) >= 2.5) continue;
-    if( sqrt(pow(eleProbeEta-eleTagEta,2)+pow(eleProbePhi-eleTagPhi,2)) < 0.6 ) continue;
+    if(jentry%reportEvery_ == 0 )
+      {
+	t_end = std::chrono::high_resolution_clock::now();
+	std::cout<<"Processing Entry in event loop (TurnOn) : "<<jentry<<" / "<<nEntries1_<<"  [ "<<100.0*jentry/nEntries1_<<"  % ]  "
+		 << " Elapsed time : "<< std::chrono::duration<double, std::milli>(t_end-t_start).count()/1000.0
+		 <<"  Estimated time left : "<< std::chrono::duration<double, std::milli>(t_end-t_start).count()*( nEntries1_ - jentry)/(1e-9 + jentry)* 0.001
+		 <<std::endl;
+      }
 
+
+    // if(l1tEmuNTT<60 && nTTRange_) continue;  //define range
+    //    sum++;
+    if(!( isProbeLoose==1 && fabs(eleProbeEta) < 2.5  && sqrt(pow(eleProbeEta-eleTagEta,2)+pow(eleProbePhi-eleTagPhi,2))>0.6)) continue;
+    // sum1++;
+    //    pT_all->Fill(eleProbeSclEt);
+    
+    if(l1tEmuRawEt < 0.) continue;
     pT_all->Fill(eleProbeSclEt);
+    sum++;
+    //sum2++;
+    //if(l1tEmuPt < 0.) continue;
+    //sum3++;
+    //if(l1tEmuNTT < 0) continue;
+    //sum4++;
     
     std::map<short, short>::iterator EtaPos = lutMapEta.find(abs(l1tEmuTowerIEta));
     if (EtaPos != lutMapEta.end()) in_compressediEta = EtaPos->second;
     else in_compressediEta = nBinsIEta-1;
     
-    if(l1tEmuPt < 0.) continue;
-    //    if(l1tEmuNTT < 0) continue; 
     std::map<short, short>::iterator EtPos = lutMapEt.find(l1tEmuRawEt);
     if (EtPos != lutMapEt.end()) in_compressediEt = EtPos->second;
     else in_compressediEt = nBinsIEt-1;
@@ -315,51 +291,56 @@ void ApplyIsolation::loops() {
     std::map<short, short>::iterator NTTPos = lutMapNTT.find(l1tEmuNTT);
     if (NTTPos != lutMapNTT.end()) in_compressedNTT = NTTPos->second;
     else in_compressedNTT = nBinsNTT-1;
+  
+
     Int_t IsoCut_Progression;
     for(UInt_t e = 15 ; e <= 50 ; e += 5) {
       for (auto it :lutProgOptVec_) {
-	TString ResultProgressionName_= "LUT_Progression_";
-    TString PtPassName_= "pt_pass_option";
+	TString ResultProgressionName_= "LUT_Progression";
+        TString PtPassName_= "pt_pass_option";
 	
-	ResultProgressionName_ +=it;
+	ResultProgressionName_ += it;
 	PtPassName_ += it;
 	PtPassName_ +="_Et_";
 	PtPassName_ += std::to_string(e);
 	
-	//TH3F* ResultProgressionName = (TH3F*)gDirectory->Get(ResultProgressionName_.Data());
-	//TH3F* ResultProgressionName = (TH3F*)optionsFile_->Get("Step2Histos/"+ResultProgressionName_);
-	TH3F* ResultProgressionName=optionsMap[ResultProgressionName_];
-    IsoCut_Progression = ResultProgressionName->GetBinContent(in_compressediEta+1,in_compressediEt+1,in_compressedNTT+1);
+	TH3F* ResultProgressionName = (TH3F*)gDirectory->Get(ResultProgressionName_.Data());
+	IsoCut_Progression = ResultProgressionName->GetBinContent(in_compressediEta+1,in_compressediEt+1,in_compressedNTT+1);
 	
 	if(l1tEmuPt >= e && l1tEmuIsoEt <= IsoCut_Progression){
+
 	  pt_pass_Map_[PtPassName_]->Fill(eleProbeSclEt);
 	}
       }
     }
-  
-   
     int n=-1;
     for (auto it :lutProgOptVec_) {
       n++;
       TString PtPassName_fr= "pt_pass_option";
-      TString ResultProgressionName_= "LUT_Progression_";      
+      TString ResultProgressionName_= "LUT_Progression";      
       
       PtPassName_fr += it;
       PtPassName_fr = PtPassName_fr + "_Et_" + std::to_string(et_option[n]) +"_fr";
-      ResultProgressionName_ +=it;
+      ResultProgressionName_ += it;
       
-      //TH3F* ResultProgressionName = (TH3F*)gDirectory->Get(ResultProgressionName_.Data());
-	  TH3F* ResultProgressionName=optionsMap[ResultProgressionName_];
+      TH3F* ResultProgressionName = (TH3F*)gDirectory->Get(ResultProgressionName_.Data());
       IsoCut_Progression = ResultProgressionName->GetBinContent(in_compressediEta+1,in_compressediEt+1,in_compressedNTT+1);
       if(l1tEmuPt >= et_option[n] && l1tEmuIsoEt <= IsoCut_Progression){
 	pt_pass_Map_[PtPassName_fr]->Fill(eleProbeSclEt);
       }
     }
+
+
+    // using Run2 LUT                                                                                                              
+    if(hasL1Emu_26==1) pt_pass_Map_Run2_["pt_pass_Et_26"]->Fill(eleProbeSclEt);
+    if(hasL1Emu_24==1) pt_pass_Map_Run2_["pt_pass_Et_24"]->Fill(eleProbeSclEt);
+    if(hasL1Emu_looseiso26==1) pt_pass_Map_Run2_["pt_pass_Et_26_loose"]->Fill(eleProbeSclEt);
+    if(hasL1Emu_looseiso24==1) pt_pass_Map_Run2_["pt_pass_Et_24_loose"]->Fill(eleProbeSclEt);
+    if(hasL1Emu_tightiso26==1) pt_pass_Map_Run2_["pt_pass_Et_26_tight"]->Fill(eleProbeSclEt);
+    if(hasL1Emu_tightiso24==1) pt_pass_Map_Run2_["pt_pass_Et_24_tight"]->Fill(eleProbeSclEt);
+
   }
-  t_end = std::chrono::high_resolution_clock::now();
-  std::cout << " Turn Ons Done: Elapsed time : "<< std::chrono::duration<double, std::milli>(t_end-t_start).count()/1000.0<<std::endl;
-  
-  
+
   //Turnons for various Ets
   for(UInt_t e = 15 ; e <= 50 ; e += 5) {
     for (auto it :lutProgOptVec_) {
@@ -381,7 +362,11 @@ void ApplyIsolation::loops() {
       td3->cd();
       turnOn_Map_[turnOn_Option_]=new TGraphAsymmErrors( pt_pass_Map_[PtPassName_],pT_all,"cp"); 
       turnOn_Map_[turnOn_Option_]->Write();
-    th1fStore["FixedEtTurnons"]->Fill(turnOn_Map_[turnOn_Option_]->GetName(),e);
+
+      double acceptance = pt_pass_Map_[PtPassName_]->GetEntries() ;
+      th1fStore["FixedEtTurnons"]->Fill(turnOn_Map_[turnOn_Option_]->GetName(),e);
+      th1fStore["FixedEtTurnons_Acceptance"]->Fill(turnOn_Map_[turnOn_Option_]->GetName(),acceptance);
+
     }
   }
 
@@ -397,55 +382,91 @@ void ApplyIsolation::loops() {
     td3->cd();
     turnOn_Option_fr += it;
     turnOn_Option_fr = turnOn_Option_fr + "_Et_" + std::to_string(et_option[n]) +"_fr";;
-    //auto x = new TGraphAsymmErrors(pT_all);
-    //x->Print();
+    
     turnOn_Map_[turnOn_Option_fr]=new TGraphAsymmErrors( pt_pass_Map_[PtPassName_fr],pT_all,"cp");
     turnOn_Map_[turnOn_Option_fr]->Write();
+
+    double acceptance = pt_pass_Map_[PtPassName_fr]->GetEntries() ;
     th1fStore["FixedRateTurnons"]->Fill(turnOn_Map_[turnOn_Option_fr]->GetName(),et_option[n]);
+    th1fStore["FixedRateTurnons_Acceptance"]->Fill(turnOn_Map_[turnOn_Option_fr]->GetName(),acceptance);
+
   }
+
+  // using Run2 LUT                                                                                                                                      
+  td4->cd();
+  std::vector<int> v = {24, 26};
+  for(int e : v) {
+    TString PtPassName_= "pt_pass";
+    TString turnOnName_="turnOn";
+    PtPassName_ +="_Et_";
+    PtPassName_ += std::to_string(e);
+    TString PtPassLooseIsoName_=PtPassName_+"_loose";
+    TString PtPassTightIsoName_=PtPassName_+"_tight";
+
+    turnOnName_ +="_Et_";
+    turnOnName_ += std::to_string(e);
+
+    TString turnOnLooseIsoName_=turnOnName_+"_loose";
+    TString turnOnTightIsoName_=turnOnName_+"_tight";
+    turnOn_Map_Run2_[turnOnName_]=new TGraphAsymmErrors( pt_pass_Map_Run2_[PtPassName_],pT_all,"cp");
+    turnOn_Map_Run2_[turnOnLooseIsoName_]=new TGraphAsymmErrors( pt_pass_Map_Run2_[PtPassLooseIsoName_],pT_all,"cp");
+    turnOn_Map_Run2_[turnOnTightIsoName_]=new TGraphAsymmErrors( pt_pass_Map_Run2_[PtPassTightIsoName_],pT_all,"cp");
+
+    turnOn_Map_Run2_[turnOnName_]->Write();
+    turnOn_Map_Run2_[turnOnLooseIsoName_]->Write();
+    turnOn_Map_Run2_[turnOnTightIsoName_]->Write();
+
+    double acceptance = pt_pass_Map_Run2_[PtPassName_]->GetEntries() ;
+    double acceptance_loose = pt_pass_Map_Run2_[PtPassLooseIsoName_]->GetEntries() ;
+    double acceptance_tight = pt_pass_Map_Run2_[PtPassTightIsoName_]->GetEntries() ;
+
+    th1fStore["Run2Turnons_Acceptance"]->Fill(turnOn_Map_Run2_[turnOnName_]->GetName(),acceptance);
+    th1fStore["Run2Turnons_LooseIso_Acceptance"]->Fill(turnOn_Map_Run2_[turnOnLooseIsoName_]->GetName(),acceptance_loose);
+    th1fStore["Run2Turnons_TightIso_Acceptance"]->Fill(turnOn_Map_Run2_[turnOnTightIsoName_]->GetName(),acceptance_tight);
+  }
+
 }
 
 void ApplyIsolation::bookHistograms() {
   outputFile_ = new TFile(outputFileName_.c_str(), "RECREATE");
   outputFile_->cd();
-
+  
   for (auto it : lutProgOptVec_) {    
     TString  CurrentNameHisto = "pt_Progression";
     TString CurrentNameHisto1= "rate_Progression";
     CurrentNameHisto += it;
     CurrentNameHisto1 += it;
-
+    
     if(!check_pt_rate_dir) { 
-       td = outputFile_->mkdir("pt_progression_for_rate");
+      td = outputFile_->mkdir("pt_progression_for_rate");
       check_pt_rate_dir = true;
     }
     td->cd();
     TH1F* pt_Progression=  new TH1F(CurrentNameHisto, CurrentNameHisto ,ET_MAX ,  0.0 , ET_MAX);
     ptMap_.insert(std::make_pair(CurrentNameHisto,pt_Progression));
-
+    
     if(!check_rate_dir) {
-       td1 = outputFile_->mkdir("rate_progression");
+      td1 = outputFile_->mkdir("rate_progression");
       check_rate_dir = true;
     }
     td1->cd();   
     TH1F* rate_Progression = new TH1F(CurrentNameHisto1, CurrentNameHisto1, ET_MAX ,  0.0 , ET_MAX );
     rateMap_.insert(std::make_pair(CurrentNameHisto1,rate_Progression));
-
+    
     for(UInt_t e = 15 ; e <= 50 ; e += 5) {
       TString PtPassName_= "pt_pass_option";
       TString turnOn_Option_="turnOn_Option";
-
+      
       PtPassName_ += it;
       PtPassName_ +="_Et_";
       PtPassName_ += std::to_string(e);  
-
+      
       if(!check_pt_turn_on_dir) {
 	td2 = outputFile_->mkdir("pt_progression_for_turnon");
 	check_pt_turn_on_dir = true;
       }
       td2->cd();
-      //TH1F*PtPass= new TH1F(PtPassName_, PtPassName_, 21,binning);
-      TH1F*PtPass= new TH1F(PtPassName_, PtPassName_, nBins_fine,xEdges_fine);
+      TH1F*PtPass= new TH1F(PtPassName_, PtPassName_, 38,binning);
       pt_pass_Map_.insert(std::make_pair(PtPassName_, PtPass));
       
       turnOn_Option_ += it;
@@ -457,21 +478,73 @@ void ApplyIsolation::bookHistograms() {
     }
   }
   td2->cd();
-  //pT_all = new TH1F("pT_all","pT_all",21,binning);
-  pT_all = new TH1F("pT_all","pT_all",nBins_fine,xEdges_fine);
-  
+  pT_all = new TH1F("pT_all","pT_all",38,binning);
+
   th1fStore["FixedRateTurnons"] = new TH1F("FixedRateTurnons","",3,0.0,3.0);
   th1fStore["FixedRateTurnons"]->SetCanExtend(TH1::kAllAxes);
+  th1fStore["FixedRateTurnons_Acceptance"] = new TH1F("FixedRateTurnons_Acceptance","",3,0.0,3.0);
+  th1fStore["FixedRateTurnons_Acceptance"]->SetCanExtend(TH1::kAllAxes);  
+
   th1fStore["FixedEtTurnons"]   = new TH1F("FixedEtTurnons","",3,0.0,3.0);
   th1fStore["FixedEtTurnons"]->SetCanExtend(TH1::kAllAxes);
+  th1fStore["FixedEtTurnons_Acceptance"]   = new TH1F("FixedEtTurnons_Acceptance","",3,0.0,3.0);
+  th1fStore["FixedEtTurnons_Acceptance"]->SetCanExtend(TH1::kAllAxes);
+  
 
+  //using Run2 LUT
+  std::vector<int> v = {24, 26};
+  for(int e : v) {
+    TString PtPassName_= "pt_pass";
+    TString turnOnName_="turnOn";
+    PtPassName_ +="_Et_";
+    PtPassName_ += std::to_string(e);
+    TString PtPassLooseIsoName_=PtPassName_+"_loose";
+    TString PtPassTightIsoName_=PtPassName_+"_tight";
+    
+    turnOnName_ +="_Et_";
+    turnOnName_ += std::to_string(e);
+    
+    TString turnOnLooseIsoName_=turnOnName_+"_loose";
+    TString turnOnTightIsoName_=turnOnName_+"_tight";
+    
+    if(!check_turn_on_dir_Run2) {
+      td4 = outputFile_->mkdir("turnon_progression_Run2");
+      check_turn_on_dir_Run2 = true;
+    }
+    td4->cd();
+    TH1F*PtPass= new TH1F(PtPassName_, PtPassName_, 38,binning);
+    TH1F*PtPassLoose= new TH1F(PtPassLooseIsoName_, PtPassLooseIsoName_, 38,binning);
+    TH1F*PtPassTight= new TH1F(PtPassTightIsoName_, PtPassTightIsoName_, 38,binning);
+    
+    pt_pass_Map_Run2_.insert(std::make_pair(PtPassName_, PtPass));
+    pt_pass_Map_Run2_.insert(std::make_pair(PtPassLooseIsoName_, PtPassLoose));
+    pt_pass_Map_Run2_.insert(std::make_pair(PtPassTightIsoName_, PtPassTight));
+    
+    
+    TGraphAsymmErrors* turnOn;
+    TGraphAsymmErrors* turnOnLoose;
+    TGraphAsymmErrors* turnOnTight;
+
+    turnOn_Map_Run2_.insert(std::make_pair(turnOnName_,turnOn));
+    turnOn_Map_Run2_.insert(std::make_pair(turnOnLooseIsoName_,turnOnLoose));
+    turnOn_Map_Run2_.insert(std::make_pair(turnOnTightIsoName_,turnOnTight));
+  }
+
+
+  th1fStore["Run2Turnons_Acceptance"]   = new TH1F("Run2Turnons_Acceptance","",3,0.0,3.0);
+  th1fStore["Run2Turnons_Acceptance"]->SetCanExtend(TH1::kAllAxes);
+  th1fStore["Run2Turnons_LooseIso_Acceptance"]   = new TH1F("Run2Turnons_LooseIso_Acceptance","",3,0.0,3.0);
+  th1fStore["Run2Turnons_LooseIso_Acceptance"]->SetCanExtend(TH1::kAllAxes);
+  th1fStore["Run2Turnons_TightIso_Acceptance"]   = new TH1F("Run2Turnons_TightIso_Acceptance","",3,0.0,3.0);
+  th1fStore["Run2Turnons_TightIso_Acceptance"]->SetCanExtend(TH1::kAllAxes);
+  
   bookedHistograms_ = true;
 }
 
 void ApplyIsolation::readLUTTable(std::string& file_name, unsigned int& nbin, std::map<short, short>& lut_map) {
   std::cout << "Opening LUT file " << file_name << std::endl;
-   std::ifstream lutFile(file_name.c_str());
-
+  std::ifstream lutFile(file_name.c_str());
+  
   if (!lutFile) {
     std::cerr << "Input File: " << file_name << " could not be opened!" << std::endl;
     return;
@@ -498,13 +571,11 @@ void ApplyIsolation::readLUTTable(std::string& file_name, unsigned int& nbin, st
 void ApplyIsolation::saveHistograms() {
   if (outputFile_ && bookedHistograms_) {
     outputFile_->cd();
-    
     for (std::map<TString,TH1F *>::iterator it=th1fStore.begin() ; it!=th1fStore.end(); ++it)
-    {
+      {
         auto &ahist = *(it->second); 
         ahist.Write();
-    }
-
+      }
     outputFile_->Write();
     outputFile_->Close();
   }
@@ -536,7 +607,10 @@ void ApplyIsolation::readParameters(const std::string jfile) {
       else if (key=="EtaLUTFileName")   readLUTTable(value,nBinsIEta, lutMapEta);
       else if (key=="NTTLUTFileName")   readLUTTable(value,nBinsNTT, lutMapNTT);
       else if (key=="nTTRange") nTTRange_ = std::stoi(value.c_str());
-      else if (key=="FixedRate") frate = std::stof(value.c_str());
+      else if (key=="ReportEvery")    reportEvery_ = atoi(value.c_str());
+      else if (key=="MaxEntriesForEfficency") maxEntriesForEfficiency_ = atoi(value.c_str());
+      else if (key=="MaxEntriesForRate")   maxEntriesForRate_ = atoi(value.c_str());
+      else if (key=="FixedRate") frate_ = std::stof(value.c_str());
       else if (key=="LUTProgressionOptions")
         {
 	  std::string tmp_string = value;
@@ -546,15 +620,6 @@ void ApplyIsolation::readParameters(const std::string jfile) {
             lutProgOptVec_.push_back(it);
           }
         }
-      else if (key=="ReportEvery")	    {
-                reportEvery= atoi(value.c_str());
-      }
-      else if (key=="MaxEntriesForEfficency")	    {
-                maxEntriesForEfficiency= atoi(value.c_str());
-      }
-      else if (key=="MaxEntriesForRate")	    {
-                maxEntriesForRate= atoi(value.c_str());
-      }
       else 
 	std::cout << " unknown option " << " key " << key << std::endl;
     }
@@ -582,11 +647,21 @@ void ApplyIsolation::readTree() {
   fChain1->SetBranchAddress("eleProbeSclEt",&eleProbeSclEt);
   fChain1->SetBranchAddress("l1tEmuIsoEt",&l1tEmuIsoEt);
 
-  fChain1->SetBranchAddress("eleProbeEta"  ,&eleProbeEta			);
-  fChain1->SetBranchAddress("eleProbePhi"  ,&eleProbePhi			);
-  fChain1->SetBranchAddress("eleTagEta"    ,&eleTagEta		    	);
-  fChain1->SetBranchAddress("eleTagPhi"    ,&eleTagPhi			    );
-  fChain1->SetBranchAddress("isProbeLoose" ,&isProbeLoose			);
+  fChain1->SetBranchAddress("eleProbeEta",&eleProbeEta);
+  fChain1->SetBranchAddress("eleProbePhi",&eleProbePhi);
+  fChain1->SetBranchAddress("eleTagEta",&eleTagEta);
+  fChain1->SetBranchAddress("eleTagPhi",&eleTagPhi);
+  fChain1->SetBranchAddress("isProbeLoose",&isProbeLoose);
+
+  
+  fChain1->SetBranchAddress("hasL1Emu_26",&hasL1Emu_26);
+  fChain1->SetBranchAddress("hasL1Emu_24",&hasL1Emu_24);
+  fChain1->SetBranchAddress("hasL1Emu_looseiso26",&hasL1Emu_looseiso26);
+  fChain1->SetBranchAddress("hasL1Emu_looseiso24",&hasL1Emu_looseiso24);
+  fChain1->SetBranchAddress("hasL1Emu_tightiso26",&hasL1Emu_tightiso26);
+  fChain1->SetBranchAddress("hasL1Emu_tightiso24",&hasL1Emu_tightiso24);
+
+
 }
 
 

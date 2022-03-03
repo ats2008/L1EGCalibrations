@@ -23,7 +23,6 @@
 
 // Header file for the classes stored in the TTree if any.
 
-#define nBins_fine 100
 class ApplyIsolation {
  public :
   TChain          *fChain;   //!pointer to the analyzed TTree or TChain
@@ -31,7 +30,7 @@ class ApplyIsolation {
   
   TChain          *fChain1;   //!pointer to the analyzed TTree or TChain                                             
   Int_t           fCurrent1; //!current Tree number in a TChain                                                                                                                                            
-  float frate; 
+  
   
   // Declaration of leaf types
   
@@ -43,8 +42,7 @@ class ApplyIsolation {
   std::vector<short>   egNTT;
   std::vector<short> egRawEt;  
   std::vector<short> egTowerIEta;
-    
-  std::map<TString,TH1F*> th1fStore;
+
 
   //Turn-On
    Float_t         l1tEmuPt;
@@ -53,18 +51,22 @@ class ApplyIsolation {
    Int_t           l1tEmuRawEt;    
    Float_t         eleProbeSclEt;
    Int_t           l1tEmuIsoEt;
-  
-   float eleProbeEta	;
-   float eleProbePhi	;
-   float eleTagEta   ;
-   float eleTagPhi	;
-   Int_t isProbeLoose;
+
+   Int_t   hasL1Emu_tightiso24;
+   Int_t   hasL1Emu_tightiso26;
+   Int_t   hasL1Emu_looseiso24;
+   Int_t   hasL1Emu_looseiso26;
+   Int_t   hasL1Emu_24;
+   Int_t   hasL1Emu_26;
    
-   Int_t reportEvery;
-   Long64_t maxEntriesForRate;
-   Long64_t maxEntriesForEfficiency;
-
-
+   
+   Int_t   isProbeLoose;
+   Float_t   eleTagPhi;
+   Float_t   eleTagEta;
+   Float_t   eleProbePhi;
+   Float_t   eleProbeEta;
+ 
+ 
    ApplyIsolation(std::string& inputFileName);
    ~ApplyIsolation();
    
@@ -79,14 +81,18 @@ class ApplyIsolation {
    
    Long64_t nEntries_;
    Long64_t nEntries1_;
+   Long64_t maxEntriesForEfficiency_;
+   Long64_t maxEntriesForRate_;
+   Long64_t reportEvery_;
+   float frate_;
    
    std::string ntupleFileNameRate_;
    std::string ntupleFileNameTurnOn_;
    std::string outputFileName_;
    std::string optionsFileName_;    
    std::vector<std::string> lutProgOptVec_;
-   
 
+   
    TFile* optionsFile_;
    TFile* outputFile_;
 
@@ -109,6 +115,10 @@ class ApplyIsolation {
    std::map<TString,TH1F*> rateMap_;
    std::map<TString,TH1F*> pt_pass_Map_;
    std::map<TString,TGraphAsymmErrors*> turnOn_Map_;
+   std::map<TString,TH1F*> pt_pass_Map_Run2_;
+   std::map<TString,TGraphAsymmErrors*> turnOn_Map_Run2_;
+   std::map<TString,TH1F*> th1fStore;
+
    TH1F* pT_all;
    std::vector<UInt_t> et_option;
 
@@ -116,14 +126,17 @@ class ApplyIsolation {
    bool check_rate_dir = false;
    bool check_pt_turn_on_dir = false;
    bool check_turn_on_dir = false;                                                                                             
-
+   bool check_turn_on_dir_Run2 =false;
    TDirectory* td;
    TDirectory* td1;
    TDirectory* td2;
    TDirectory* td3;
-   Double_t binning[22] = {18,20,22,24,26,28,30,32,35,40,45,50,60,70,90,110,210,350,500,700,1000,2000};
-   
-   Double_t xEdges_fine[nBins_fine+1];
+   TDirectory* td4;
+
+   Double_t binning[39] ={1., 3., 5., 7., 9.,  10., 12., 15., 18., 20., 22., 24., 26., 28.,
+                          29., 30., 31., 32., 33., 34., 35., 36., 37., 38., 39., 40., 41.,
+                          42., 43., 45., 50., 60., 70., 100., 200., 300., 400., 600., 1000.};
+
 };
 
 #endif
