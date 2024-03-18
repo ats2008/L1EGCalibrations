@@ -28,15 +28,21 @@ public :
   
   // Declaration of leaf types
 
-  Int_t          et;
-  Int_t          eta;
-  Int_t          ntt;
-  Int_t          iso;
+  // Int_t          et;
+  // Int_t          eta;
+  // Int_t          ntt;
+  // Int_t          iso;
+  float et;
+  float eta;
+  float ntt;
+  float iso;
   float eleProbeEta	;
   float eleProbePhi	;
   float eleTagEta   ;
   float eleTagPhi	;
-  Int_t isProbeLoose;
+  float Nvtx	;
+  //Int_t isProbeLoose;
+  float isProbeLoose;
 
   Long64_t       maxEntries;
   Int_t          reportEvery;
@@ -124,6 +130,12 @@ public :
   int doSuperCompression;
   bool doDynamicBinning;
   std::vector<Int_t> superCompressionToDefaultCompressionMap;
+  std::vector<Float_t> puRewightMap;
+
+  Int_t isoOffset;
+  Int_t ietaMinForOffset;
+  Int_t ietaMaxForOffset;
+
 };
 
 #endif

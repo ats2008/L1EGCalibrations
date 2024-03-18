@@ -6,8 +6,8 @@ import operator
 compressedIetaFile  = "data/egCompressEtaLUT_4bit_v4.txt"
 compressedEFile     = "data/egCompressELUT_4bit_v4.txt"
 compressedShapeFile = "data/egCompressShapesLUT_calibr_4bit_v4.txt"
-inputFileName       = "regressionTrainerFile_test.root"
-outputFileName      = "compressed_regressionTrainerFile_PFEt_data.root"
+inputFileName       = "./regressionTrainerFile.root"
+outputFileName      = "compressed_regressionTrainerFile.root"
 treeName = "eIDSimpleTree"
 
 

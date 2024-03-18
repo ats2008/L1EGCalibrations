@@ -77,6 +77,12 @@ checkIf0Gtr1=True
 #slopeHigh=[0.1,0.3, 3 ,4 , 6 , 15, 30]
 #checkIf0Gtr1=False
 
+# Grid D
+etMins=[10.0+1.0*i for i in range(1) ]
+effMins=[0.7 + 0.02*i for i in range(20)]
+etMaxs=[40.0+1.0*i for i in range(1) ]
+
+
 
 ParToScan=[etMins,effMins,etMaxs]
 #ParToScan=[turnOnPts,slopeLow,slopeHigh]
@@ -100,8 +106,12 @@ if printConfig:
             if allOpts[i][0] >= allOpts[i][2]:
                 continue
         optId+=1
-        optstr+=str(optId)+'_'+str(allOpts[i][0]).replace('.','p')+'_'+str(allOpts[i][1]).replace('.','p')+'_'+str(allOpts[i][2]).replace('.','p')
-        optstr+=':'+str(allOpts[i][0])+':'+str(allOpts[i][1])+':'+str(allOpts[i][2])    
+        optName=str(optId)+'_'+str(allOpts[i][0]).replace('.','p')+'_'+str(allOpts[i][1]).replace('.','p')+'_'+str(allOpts[i][2]).replace('.','p')
+        if args.doStep2:
+            optstr+=':'+str(allOpts[i][0])+':'+str(allOpts[i][1])+':'+str(allOpts[i][2])    
+        elif args.doV2:
+            optName=optName+',v2_'+optName
+        optstr+=optName
         optstr+=','
     print(optstr[:-1],end='')
 else :

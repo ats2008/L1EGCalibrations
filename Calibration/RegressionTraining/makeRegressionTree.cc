@@ -21,11 +21,11 @@ void makeRegressionTree(){ //vector<TString> input_names, TString output_name){
     intree->Add(input_names[i]);
 */
 
-  TFile *f=TFile::Open("/grid_mnt/t3storage3/athachay/l1egamma/data/run3Data/TagAndProbe_ReEmul_EGEraF_Remul_caloParam_v0_4_default.root");
+  TFile *f=TFile::Open("/grid_mnt/t3storage3/athachay/l1egamma/data/2024/TandP_EGamma0And1_2023D_reEmulated_v0.root");
   TTree *intree=(TTree*)f->Get("Ntuplizer/TagAndProbe");
 
 
-  TString output_file("./regressionTrainerFile_test.root");
+  TString output_file("./regressionTrainerFile.root");
   TFile* f_new = TFile::Open(output_file,"RECREATE");
 
   TTree* tree = new TTree("eIDSimpleTree","eIDSimpleTree");
@@ -49,6 +49,7 @@ void makeRegressionTree(){ //vector<TString> input_names, TString output_name){
   ULong64_t _nEvent;
   Int_t _nRun;
   Int_t _nLumi;
+  float _ele_probePt;//[10];
   float _ele_sclEt;//[10];
   int _ele_L1Stage2_emul_ieta;//[10];
   int _ele_L1Stage2_emul_rawEt;//[10];
@@ -75,6 +76,7 @@ void makeRegressionTree(){ //vector<TString> input_names, TString output_name){
   intree->SetBranchAddress("EventNumber",&_nEvent);
   intree->SetBranchAddress("RunNumber",&_nRun);
   intree->SetBranchAddress("lumi",&_nLumi);
+  intree->SetBranchAddress("eleProbePt",&_ele_probePt);
   intree->SetBranchAddress("eleProbeSclEt",&_ele_sclEt);
   intree->SetBranchAddress("l1tEmuTowerIEta",&_ele_L1Stage2_emul_ieta);
   intree->SetBranchAddress("l1tEmuRawEt",&_ele_L1Stage2_emul_rawEt);
@@ -89,6 +91,7 @@ void makeRegressionTree(){ //vector<TString> input_names, TString output_name){
   tree->Branch("Lumi",&_lumi,"_lumi/I");
   tree->Branch("ieta",&_ieta,"_ieta/I");
   tree->Branch("E",&_E,"_E/I");
+  tree->Branch("eleProbePt",&_ele_probePt,"_ele_probePt/F");
   tree->Branch("eleProbeSclEt",&_ele_sclEt,"_ele_sclEt/F");
   tree->Branch("shape",&_shape,"_shape/I");
   tree->Branch("target",&_target,"_target/F");
@@ -110,7 +113,7 @@ void makeRegressionTree(){ //vector<TString> input_names, TString output_name){
   
   for(int i=0;i<nentries;i++){
     if(i<nentries_beg) continue;
-    if(i%80000==0){
+    if(i%50000==0){
          t_end = std::chrono::high_resolution_clock::now();
          cout<<"Processing Entry "<<i<<" / "<<nentries<<"  [ "<<100.0*i/nentries<<"  % ]  "
              << " Elapsed time : "<< std::chrono::duration<double, std::milli>(t_end-t_start).count()/1000.0
@@ -140,10 +143,7 @@ void makeRegressionTree(){ //vector<TString> input_names, TString output_name){
 	    _ieta           = _ele_L1Stage2_emul_ieta;
 	    _E              = _ele_L1Stage2_emul_rawEt;
 	    _shape          = _ele_L1Stage2_emul_shape;
-	     //if( abs(_ieta) <= 17)   
-	        _target         = _ele_sclEt/(0.5*_E);
-         //else
-         //   _target         = eleProbePt/(0.5*_E);
+	    _target         = _ele_probePt/(0.5*_E);
 	    _target2        = _ele_sclEt/(_E);
 	    _HoverERatio    = _ele_L1Stage2_emul_hOverERatio;
 	    _nTT            = _ele_L1Stage2_emul_nTT;

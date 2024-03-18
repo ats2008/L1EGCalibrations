@@ -53,13 +53,13 @@ public :
 
 
     //Turn-On
-    Float_t         l1tEmuPt;
-    Int_t           l1tEmuTowerIEta;
-    Int_t           l1tEmuNTT;
-    Int_t           l1tEmuRawEt;
-    Float_t         eleProbeSclEt;
-    Int_t           l1tEmuIsoEt;
-    Int_t           l1tEmuIso;
+    Float_t           l1tEmuPt;
+    Float_t           l1tEmuTowerIEta;
+    Float_t           l1tEmuNTT;
+    Float_t           l1tEmuRawEt;
+    Float_t           eleProbeSclEt;
+    Float_t           l1tEmuIsoEt;
+    Float_t           l1tEmuIso;
 
     Int_t   hasL1Emu_tightiso22;
     Int_t   hasL1Emu_tightiso24;
@@ -71,9 +71,9 @@ public :
     Int_t   hasL1Emu_24;
     Int_t   hasL1Emu_26;
 
-    Int_t           Nvtx;
+    Float_t           Nvtx;
 
-    Int_t   isProbeLoose;
+    Float_t   isProbeLoose;
     Float_t   eleTagPhi;
     Float_t   eleTagEta;
     Float_t   eleProbePhi;

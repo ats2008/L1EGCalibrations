@@ -195,9 +195,11 @@ void ApplyIsolation::loops() {
             TString pt_ProgressionDIER_= "pt_Progression_doubleIsoER" +it;
             TString pt_ProgressionDIXXp10ER_= "pt_Progression_doubleIsoXXp10ER" +it;
             TString pt_ProgressionDIXXp5ER_ = "pt_Progression_doubleIsoXXp5ER" +it;
-
-            TH3F* ResultProgressionName = (TH3F*)gDirectory->Get(ResultProgressionName_.Data());
-            if(!ResultProgressionName) std::cout<<"LOLLLLLLL"<<ResultProgressionName_<<std::endl;
+             TH3F* ResultProgressionName = (TH3F*)gDirectory->Get(ResultProgressionName_.Data());
+            if(!ResultProgressionName) {
+    
+                        std::cout<<"LOLLLLLLL | "<<ResultProgressionName_<<std::endl;
+                    }
 
             Int_t nIsoEGs=0;
             Int_t nIsoEREGs=0;
@@ -392,19 +394,19 @@ void ApplyIsolation::loops() {
                      <<std::endl;
         }
         if(!( isProbeLoose==1 && fabs(eleProbeEta) < 2.5  && sqrt(pow(eleProbeEta-eleTagEta,2)+pow(eleProbePhi-eleTagPhi,2))>0.6)) continue;
-        pT_all->Fill(eleProbeSclEt);
         if(l1tEmuRawEt < 0.) continue;
+        pT_all->Fill(eleProbeSclEt);
         sum++;
 
-        std::map<short, short>::iterator EtaPos = lutMapEta.find(abs(l1tEmuTowerIEta));
+        std::map<short, short>::iterator EtaPos = lutMapEta.find(abs(short(l1tEmuTowerIEta)));
         if (EtaPos != lutMapEta.end()) in_compressediEta = EtaPos->second;
         else in_compressediEta = nBinsIEta-1;
 
-        std::map<short, short>::iterator EtPos = lutMapEt.find(l1tEmuRawEt);
+        std::map<short, short>::iterator EtPos = lutMapEt.find(short(l1tEmuRawEt));
         if (EtPos != lutMapEt.end()) in_compressediEt = EtPos->second;
         else in_compressediEt = nBinsIEt-1;
 
-        std::map<short, short>::iterator NTTPos = lutMapNTT.find(l1tEmuNTT);
+        std::map<short, short>::iterator NTTPos = lutMapNTT.find(short(l1tEmuNTT));
         if (NTTPos != lutMapNTT.end()) in_compressedNTT = NTTPos->second;
         else in_compressedNTT = nBinsNTT-1;
 
@@ -415,12 +417,13 @@ void ApplyIsolation::loops() {
                 //Filling pt Progression for Turnon
                 TString PtPassName_= "pT_pass_option_Et" + std::to_string(e);
                 if(l1tEmuPt >= e )	  pt_pass_Map_[PtPassName_]->Fill(eleProbeSclEt);
-            for (auto it :lutProgOptVec_) {
+                for (auto it :lutProgOptVec_) {
                 TString ResultProgressionName_= "LUT_Progression_" + it ;
                 TH3F* ResultProgressionName = (TH3F*)gDirectory->Get(ResultProgressionName_.Data());
                 IsoCut_Progression = ResultProgressionName->GetBinContent(in_compressediEta+1,in_compressediEt+1,in_compressedNTT+1);
                 
                 PtPassName_= "pT_pass_option" + it + "_Et" + std::to_string(e);
+                //std::cout<<__LINE__<<" | "<<"Et : "<<l1tEmuPt<<" l1tEmuIsoEt : "<<l1tEmuIsoEt<<" IsoCut_Progression : "<<IsoCut_Progression<<" [  "<<ResultProgressionName_ <<" ] \n"; 
                 if(l1tEmuPt >= e && l1tEmuIsoEt <= IsoCut_Progression)	  pt_pass_Map_[PtPassName_]->Fill(eleProbeSclEt);
                 
 
