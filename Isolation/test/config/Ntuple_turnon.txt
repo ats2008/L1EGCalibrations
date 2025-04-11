@@ -1,1 +1,1 @@
-/grid_mnt/t3storage3/athachay/l1egamma/data/run3Data/slimmedDSet_TagAndProbe_eraG_recaliberated_EGamma_ZS0p5_v5.root
+/eos/cms/store/group/dpg_trigger/comm_trigger/L1Trigger/zpainesi/CrabOutputStorage/TnP_ntuples/2024/hcal_and_jax19_51/TnP_Ntuple_EG0_1_2023D_v1_2_reEmu_eTRecalib.root

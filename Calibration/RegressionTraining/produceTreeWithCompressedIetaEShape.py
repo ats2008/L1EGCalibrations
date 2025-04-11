@@ -91,7 +91,7 @@ data = {"Run"    :array.array('i',[0]),
 print( "First pass: reading tree to build compressed shape histo")
 nentries = inputTree.GetEntriesFast()
 for e in range(nentries):
-    if e%2000==0:
+    if e%50000==0:
         print( "\t entry = ",e," / ",nentries,"  [ ",100.0*e/nentries ," ] ")
     inputTree.GetEntry(e)
     data["Run"][0]    = int(inputTree.Run)
@@ -124,21 +124,16 @@ shapeHisto.Write()
 
 print( "Second pass: reading tree for filling output tree")
 for e in range(nentries):
-    if e%2000==0:
+    if e%50000==0:
         print( "\t entry = ",e," / ",nentries,"  [ ",100.0*e/nentries ," ] ")
+    
     inputTree.GetEntry(e)
     data["Run"][0]    = int(inputTree.Run)
     data["Event"][0]  =  int(inputTree.Event)
-    #data["Weight"][0] =  inputTree.Weight
-    #data["group"][0]  =  int(inputTree.group)
     data["ieta"][0]   =  int(inputTree.ieta)
-    #data["iphi"][0]   =  int(inputTree.iphi)
     data["E"][0]      =  int(inputTree.E)
     data["shape"][0]  =  int(inputTree.shape)
-    #data["side"][0]   =  int(inputTree.side)
     data["target"][0] =  inputTree.target
-    #data["ptoff"][0]  =  inputTree.ptoff
-    #data["etl1"][0]   =  inputTree.etl1
     data["Run2IdLevel"][0] = inputTree.Run2IdLevel
 
     data["compressedieta"][0]  = int(math.copysign(compressedIeta[abs(data["ieta"][0])], data["ieta"][0]))
