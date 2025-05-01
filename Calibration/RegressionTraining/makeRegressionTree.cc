@@ -13,15 +13,8 @@ using namespace std;
 #endif
 
 
-void makeRegressionTree(){ //vector<TString> input_names, TString output_name){
+void makeRegressionTree(){ 
 
-/*
-  TChain* intree = new TChain("produceNtuple/eIDSimpleTree");
-  for(unsigned int i=0; i<input_names.size();i++)
-    intree->Add(input_names[i]);
-*/
-
-  //TFile *f=TFile::Open("/grid_mnt/t3storage3/athachay/l1egamma/data/2024/TandP_EGamma0And1_2023D_reEmulated_v0.root");
   TFile *f=TFile::Open("/eos/cms/store/group/dpg_trigger/comm_trigger/L1Trigger/piosifid/TnP_newHcal/TnP_cons_newHcal.root");
   TTree *intree=(TTree*)f->Get("Ntuplizer/TagAndProbe");
 
@@ -103,19 +96,18 @@ void makeRegressionTree(){ //vector<TString> input_names, TString output_name){
   tree->Branch("Run2IdLevel",&_Run2IdLevel,"_Run2IdLevel/I");
 
 
-    auto t_start = std::chrono::high_resolution_clock::now();
-    auto t_end = std::chrono::high_resolution_clock::now();
+  auto t_start = std::chrono::high_resolution_clock::now();
+  auto t_end = std::chrono::high_resolution_clock::now();
 
   Long64_t nentries = intree->GetEntries();
   Long64_t nentries_beg = 0;
   std::cout<<" Available total "<<nentries<<" \n";
   std::cout<<" Processing total "<<nentries - nentries_beg<<" \n";
 
-  
+  nentries=50000;
   for(int i=0;i<nentries;i++){
-    if(i<nentries_beg) continue;
     
-   // if(i%4) continue;
+    if(i<nentries_beg) continue;
 
     if(i%50000==0){
          t_end = std::chrono::high_resolution_clock::now();

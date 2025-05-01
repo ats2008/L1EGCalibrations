@@ -1,23 +1,19 @@
 #!/usr/bin/env python
-import sys
+import sys,argparse
 import ROOT
-from GBR2LUT import GBR2LUT
-from GBR2LUTEmulator_test_newcal import GBR2LUTEmulator_test_newcal
+from GBR2LUTEmulator import GBR2LUTEmulator
 
-inputFile = "/home/athachay/t3store3/l1egamma/emulationstuff/CMSSW_7_6_0/src/EG_Calibrations/L1EGCalibrations/RegressionTraining/CMSSW_122XSampleFiles_PF_eT/regressionRun3MC_122XSample_v0_results.root"
+parser = argparse.ArgumentParser()
+parser.add_argument('-i',"--inputFile", help="Input File")
+args = parser.parse_args()
+
+inputFile =  args.inputFile
+print(inputFile)
+
 version = "v17.04.04"
-sortedShapesFile = "data/compressedSortedShapes.txt"
+sortedShapesFile = "compressedSortedShapes.txt"
 regresionName ="pfetReg"
 outputDir="./"
-if len(sys.argv) < 2 :
-    print("Please provide the results file !! ")
-if len(sys.argv) > 1 :
-    inputFile=sys.argv[1]
-if len(sys.argv) > 2 :
-    regresionName=sys.argv[2]
-if len(sys.argv) > 3 :
-    outputDir=sys.argv[3]
-
 suffix="_{}.txt".format(version)
 
 print( "Reading the Input Result file File as   :  ", inputFile)
@@ -49,7 +45,7 @@ for i in range(0,16):
 
 gbr2luts = []
 
-gbr2luts.append(GBR2LUTEmulator_test_newcal())
+gbr2luts.append(GBR2LUTEmulator())
 gbr2luts[-1].name = regresionName
 gbr2luts[-1].inputFileName = inputFile
 gbr2luts[-1].outputFileName = outputDir+gbr2luts[-1].name+ suffix

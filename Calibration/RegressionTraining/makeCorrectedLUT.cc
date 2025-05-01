@@ -5,6 +5,15 @@
 
 using namespace std;
 
+TString header_=R"""(# Calibration vs |ieta|,shape,E. Derived from Run 283478 data, with semi-parametric regression 
+# The LUT output is (ET_off/ET_L1) between 0 and 2, encoded on 9 bits 
+# Index is compressedShape+compressedE<<4+compressedIeta<<8. 
+# Compression version is v4 
+#anything after # is ignored with the exception of the header 
+#the header is first valid line starting with #<header> versionStr(unused but may be in future) nrBitsAddress nrBitsData </header> 
+#<header> V8 12 10 </header> ;
+
+)""";
 const int HeaderLines=8;
 
 vector<int> convert_LUT_calibr(TString LUTfile){
@@ -63,7 +72,7 @@ vector<int> convert_shapeLUT(TString LUTfile){
 void write_calibrLUT(TString LUTfile_calib, TString LUTfile_shapeID, TString LUTfile_out){
 
   std::ofstream out(LUTfile_out);
-
+  out<<header_;
   vector<int> converted_LUT=convert_LUT_calibr(LUTfile_calib);
   vector<int> converted_shapeLUT=convert_shapeLUT(LUTfile_shapeID);
 
@@ -89,16 +98,11 @@ void write_calibrLUT(TString LUTfile_calib, TString LUTfile_shapeID, TString LUT
 
 }
 
-void makeCorrectedLUT( TString LUTfile_calib  ="from2023EraD_v0_2.2022.1.0.txt" ,
-                       TString LUTfile_out    ="correctedLUT_from2023EraD_v0_2.2022.1.0.txt",
-                       TString LUTfile_shapeID="data/shapeIdentification_adapt0.99_compressedieta_compressedE_compressedshape_v17.05.19.txt"
+void makeCorrectedLUT( TString LUTfile_calib  ="calibration_april2024_newcaloL1_oldHcal.txt" ,
+                       TString LUTfile_out    ="correctedLUT.txt"
                        ){
-  
-  //TString LUTfile_calib="lowPtRegressionUncorrectedLUT_v17.04.04.txt";
-  //TString LUTfile_out = "lowPtRegressionLUT.txt";
-  //
-  //LUTfile_calib="swetasRun3Rgression_v17.04.04.txt";
-  //LUTfile_out = "swetasRun3RegressionLUT.txt";
+
+  TString LUTfile_shapeID="data/shapeIdentification_adapt0.99_compressedieta_compressedE_compressedshape_v17.05.19.txt" ;
   
   write_calibrLUT(LUTfile_calib,LUTfile_shapeID,LUTfile_out);
 
